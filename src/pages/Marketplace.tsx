@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { XCircleIcon } from '@phosphor-icons/react'
 import { useStore } from '../lib/store'
 import { TreeCard } from '../components/TreeCard'
+import { speciesPhotoCredits } from '../lib/speciesPhotos'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 import type { Occasion } from '../lib/types'
 
@@ -158,11 +159,30 @@ export function Marketplace() {
       </p>
 
       {filtered.length > 0 ? (
-        <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((tree) => (
-            <TreeCard key={tree.id} tree={tree} />
-          ))}
-        </div>
+        <>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((tree) => (
+              <TreeCard key={tree.id} tree={tree} />
+            ))}
+          </div>
+          <p className="mt-6 text-[11px] leading-relaxed text-ink-muted">
+            Species photos are real trees of each species, not the individual demo
+            trees. Via Wikimedia Commons:{' '}
+            {speciesPhotoCredits().map((c, i, all) => (
+              <span key={c.credit + c.license}>
+                <a
+                  href={c.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-line underline-offset-2 hover:text-canopy"
+                >
+                  {c.credit}
+                </a>{' '}
+                ({c.license}){i < all.length - 1 ? ' · ' : ''}
+              </span>
+            ))}
+          </p>
+        </>
       ) : (
         <div className="card mt-4 px-6 py-16 text-center">
           <p className="font-display text-xl font-bold text-ink">No trees match those filters</p>

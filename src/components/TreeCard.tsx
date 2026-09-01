@@ -4,6 +4,7 @@ import type { Tree } from '../lib/types'
 import { useStore } from '../lib/store'
 import { currentGirthCm, lastGrowthCm, treeAge } from '../lib/selectors'
 import { formatInr, signedCm } from '../lib/format'
+import { SPECIES_PHOTOS } from '../lib/speciesPhotos'
 import { StatusBadge } from './StatusBadge'
 import { TapeRuler } from './TapeRuler'
 
@@ -17,12 +18,24 @@ export function TreeCard({ tree }: TreeCardProps) {
   const growth = lastGrowthCm(state, tree.id)
   const age = treeAge(tree)
   const sponsored = state.sponsorships.some((s) => s.treeId === tree.id)
+  const photo = SPECIES_PHOTOS[tree.species]
 
   return (
     <Link
       to={`/trees/${tree.id}`}
-      className="card group flex flex-col p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-canopy hover:shadow-[0_10px_30px_-16px_rgba(45,106,67,0.35)]"
+      className="card group flex flex-col overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-canopy hover:shadow-[0_10px_30px_-16px_rgba(45,106,67,0.35)]"
     >
+      {photo && (
+        <div className="-mx-5 -mt-5 mb-4 h-36 overflow-hidden border-b border-line bg-line/40">
+          <img
+            src={photo.src}
+            alt={`A ${tree.species.toLowerCase()} tree of this species`}
+            loading="lazy"
+            className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            style={{ objectPosition: photo.position }}
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3">
         <span className="font-mono text-[12px] font-semibold tracking-wide text-ink-muted">
           {tree.id}
