@@ -19,6 +19,7 @@ import {
   verifiedHistory,
 } from '../lib/selectors'
 import { formatDate, formatInr, signedCm } from '../lib/format'
+import { SPECIES_PHOTOS } from '../lib/speciesPhotos'
 import { StatusBadge } from '../components/StatusBadge'
 import { TapeRuler } from '../components/TapeRuler'
 import { GrowthChart } from '../components/GrowthChart'
@@ -60,6 +61,8 @@ export function TreeProfile() {
     simulated: m.simulated,
   }))
 
+  const photo = SPECIES_PHOTOS[tree.species]
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <Link
@@ -91,6 +94,31 @@ export function TreeProfile() {
             <span>Cared for by {tree.farmerName}</span>
           </p>
         </div>
+
+        {photo && (
+          <figure className="w-full sm:max-w-sm">
+            <div className="aspect-[16/10] overflow-hidden rounded-2xl border border-line bg-line/40">
+              <img
+                src={photo.src}
+                alt={`A ${tree.species.toLowerCase()} tree of this species`}
+                className="size-full object-cover"
+                style={{ objectPosition: photo.position }}
+              />
+            </div>
+            <figcaption className="mt-1.5 text-[11px] text-ink-muted">
+              A {tree.species.toLowerCase()} like this one · photo{' '}
+              <a
+                href={photo.href}
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-line underline-offset-2 hover:text-canopy"
+              >
+                {photo.credit}
+              </a>{' '}
+              ({photo.license}), Wikimedia Commons
+            </figcaption>
+          </figure>
+        )}
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
