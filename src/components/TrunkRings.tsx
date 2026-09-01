@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useInView, useReducedMotion } from 'motion/react'
 import { CountUp } from './CountUp'
 
 interface GrowthStep {
@@ -23,14 +23,16 @@ const CY = 215
  */
 export function TrunkRings({ steps, className }: TrunkRingsProps) {
   const reduceMotion = useReducedMotion()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inView = useInView(containerRef, { once: true, amount: 0.35 })
   const [stepIndex, setStepIndex] = useState(reduceMotion ? steps.length - 1 : 0)
 
   useEffect(() => {
-    if (reduceMotion) return
+    if (reduceMotion || !inView) return
     if (stepIndex >= steps.length - 1) return
     const timer = setTimeout(() => setStepIndex((i) => i + 1), 1500)
     return () => clearTimeout(timer)
-  }, [stepIndex, steps.length, reduceMotion])
+  }, [stepIndex, steps.length, reduceMotion, inView])
 
   const current = steps[stepIndex]
   const maxGirth = steps[steps.length - 1].girthCm
@@ -68,7 +70,7 @@ export function TrunkRings({ steps, className }: TrunkRingsProps) {
     : { type: 'spring' as const, stiffness: 45, damping: 14 }
 
   return (
-    <div className={className}>
+    <div className={className} ref={containerRef}>
       <div
         role="img"
         aria-label={`A trunk cross-section growing from ${steps[0].girthCm} to ${maxGirth} centimetres of girth between ${steps[0].year} and ${steps[steps.length - 1].year}`}

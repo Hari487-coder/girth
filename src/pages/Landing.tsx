@@ -13,10 +13,10 @@ import {
   TimerIcon,
 } from '@phosphor-icons/react'
 import { TrunkRings } from '../components/TrunkRings'
-import { TapeRuler } from '../components/TapeRuler'
+import { StoryScene } from '../components/StoryScene'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 
-const HERO_STEPS = [
+const GROWTH_EXAMPLE = [
   { year: 2024, girthCm: 8 },
   { year: 2025, girthCm: 14 },
   { year: 2026, girthCm: 21 },
@@ -116,7 +116,7 @@ export function Landing() {
           </div>
         </div>
 
-        <TrunkRings steps={HERO_STEPS} className="mx-auto w-full max-w-md lg:max-w-none" />
+        <StoryScene className="mx-auto w-full max-w-xl lg:max-w-none" />
       </section>
 
       {/* the core contrast */}
@@ -152,19 +152,8 @@ export function Landing() {
           </motion.div>
 
           <motion.div {...reveal(0.1)} className="self-center">
-            <p className="text-sm font-semibold text-ink">One tree, three years on the tape</p>
-            <div className="mt-4 space-y-5">
-              {HERO_STEPS.map((step, i) => (
-                <div key={step.year} className="grid grid-cols-[64px_1fr_72px] items-center gap-3">
-                  <span className="text-[13px] font-medium text-ink-muted">Year {i + 1}</span>
-                  <TapeRuler value={step.girthCm} max={25} compact />
-                  <span className="text-right font-mono text-xl font-bold text-ink">
-                    {step.girthCm} <span className="text-[13px] font-medium text-ink-muted">cm</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="mt-4 text-[13px] text-ink-muted">
+            <TrunkRings steps={GROWTH_EXAMPLE} className="mx-auto w-full max-w-md" />
+            <p className="mx-auto mt-4 max-w-md text-[13px] text-ink-muted">
               Girth is trunk circumference at a standard height. It only moves one way
               while the tree is alive, which makes it an honest score.
             </p>
@@ -299,8 +288,8 @@ export function Landing() {
       <p className="mx-auto mt-10 max-w-7xl px-4 sm:px-6">
         <span className="flex items-center gap-2 text-[13px] text-ink-muted">
           <MapPinIcon size={14} aria-hidden="true" />
-          Pilot region in this demo: Sangareddy and Medak districts, Telangana. All demo
-          data is fictional.
+          Pilot region in this demo: IIT Hyderabad (Kandi) and villages across
+          Sangareddy and Medak districts, Telangana. All demo data is fictional.
         </span>
       </p>
     </div>
