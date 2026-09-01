@@ -13,7 +13,7 @@ import {
   TimerIcon,
 } from '@phosphor-icons/react'
 import { TrunkRings } from '../components/TrunkRings'
-import { StoryScene } from '../components/StoryScene'
+import { PhotoStory } from '../components/PhotoStory'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 const GROWTH_EXAMPLE = [
@@ -116,7 +116,7 @@ export function Landing() {
           </div>
         </div>
 
-        <StoryScene className="mx-auto w-full max-w-xl lg:max-w-none" />
+        <PhotoStory className="mx-auto w-full max-w-xl lg:max-w-none" />
       </section>
 
       {/* the core contrast */}

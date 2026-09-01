@@ -47,6 +47,15 @@ npm install
 npm run dev
 ```
 
+## Photo credits
+
+The landing page uses real photographs via Wikimedia Commons, shown with an
+explicit "not our trees yet" note in the UI:
+
+- [India - Kids - Planting trees for her future](https://commons.wikimedia.org/wiki/File:India_-_Kids_-_Planting_trees_for_her_future_(4040009491).jpg) by McKay Savage, CC BY 2.0
+- [Plant a Sapling for Better Future](https://commons.wikimedia.org/wiki/File:Plant_a_Sapling_for_Better_Future.jpg) by Robbieross123, CC BY-SA 4.0
+- [Central Library IIT Hyderabad](https://commons.wikimedia.org/wiki/File:Central_Library_IIT_Hyderabad,_Knowledge_Resource_centre_IIT_Hyderabad.jpg) by Mukesh721, CC0
+
 Deploys to GitHub Pages from the `gh-pages` branch:
 
 ```bash
