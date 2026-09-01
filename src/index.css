@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+  --font-mono: "Spline Sans Mono", ui-monospace, "Cascadia Mono", monospace;
+
+  --color-paper: #f7f7f3;
+  --color-surface: #ffffff;
+  --color-ink: #202823;
+  --color-ink-soft: #4e5a52;
+  --color-ink-muted: #687269;
+  --color-line: #e2e5de;
+  --color-line-strong: #c8cec4;
+
+  --color-canopy: #2d6a43;
+  --color-canopy-deep: #235238;
+  --color-canopy-soft: #e3eee6;
+  --color-canopy-faint: #f0f5f1;
+
+  --color-tape: #eec86a;
+  --color-tape-deep: #d3a83f;
+  --color-tape-ink: #574411;
+
+  --color-warn: #92640a;
+  --color-warn-soft: #f9efd9;
+  --color-alert: #b3261e;
+  --color-alert-soft: #f9e7e5;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+
+  ::selection {
+    @apply bg-canopy text-white;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-canopy);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    text-wrap: balance;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility btn {
+  @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all duration-200 select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+}
+
+@layer components {
+  .btn-primary {
+    @apply btn bg-canopy px-6 py-3 text-white hover:bg-canopy-deep;
+  }
+
+  .btn-secondary {
+    @apply btn border border-line-strong bg-surface px-6 py-3 text-ink hover:border-canopy hover:text-canopy;
+  }
+
+  .btn-small {
+    @apply px-4 py-2 text-[13px];
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-surface;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-line-strong bg-surface px-4 py-3 text-[15px] text-ink placeholder:text-ink-muted focus:border-canopy focus:outline-none;
+  }
+
+  .field-label {
+    @apply mb-2 block text-[13px] font-semibold text-ink;
+  }
+
+  .demo-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-tape-deep/40 bg-tape/20 px-2.5 py-1 font-mono text-[11px] font-medium tracking-wide text-tape-ink;
+  }
+}
