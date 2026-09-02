@@ -316,6 +316,15 @@ describe('critical acceptance journey', () => {
     expect(pub.json().sponsorship.treeName).toBe("Amma's Mango Tree")
     const farmerCannotSponsor = await farmer.post(`/trees/${treePublicId}/sponsorships`, { treeName: 'x', occasion: 'BIRTHDAY' })
     expect(farmerCannotSponsor.statusCode).toBe(403)
+
+    // the public marketplace no longer offers the sponsored tree, and prices come from settings
+    const available = await app.inject({ method: 'GET', url: '/public/trees' })
+    expect(available.statusCode).toBe(200)
+    expect(available.json().pricePaise).toBe(249900)
+    const ids = available.json().trees.map((t: { publicId: string }) => t.publicId)
+    expect(ids).not.toContain(treePublicId)
+    expect(ids).toContain('GIRTH-000003')
+    expect(JSON.stringify(available.json())).not.toContain('Ravi')
   })
 
   it('organisation reporting never counts unverified trees as verified', async () => {

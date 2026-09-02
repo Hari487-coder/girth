@@ -1,14 +1,25 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { ListIcon, XIcon } from '@phosphor-icons/react'
-import { useStore } from '../lib/store'
+import type { UserRole } from '@girth/domain'
+import { useSession } from '../lib/session'
 
-const LINKS = [
+const ENV = (import.meta.env.VITE_APP_ENV as string | undefined) ?? 'local'
+
+interface NavItem {
+  to: string
+  label: string
+  roles?: UserRole[]
+}
+
+const ITEMS: NavItem[] = [
   { to: '/trees', label: 'Find a Tree' },
-  { to: '/my-trees', label: 'My Trees' },
-  { to: '/farmer', label: 'Farmer Portal' },
-  { to: '/verification', label: 'Verification' },
-  { to: '/experiments', label: 'Experiments' },
+  { to: '/my-trees', label: 'My Trees', roles: ['CUSTOMER'] },
+  { to: '/farm', label: 'My Farm', roles: ['FARMER'] },
+  { to: '/review', label: 'Review', roles: ['FIELD_AUDITOR', 'ADMIN'] },
+  { to: '/audits', label: 'Audits', roles: ['FIELD_AUDITOR', 'ADMIN'] },
+  { to: '/org', label: 'Programs', roles: ['ORGANISATION', 'ADMIN'] },
+  { to: '/admin', label: 'Admin', roles: ['ADMIN'] },
 ]
 
 function Wordmark() {
@@ -29,13 +40,19 @@ function Wordmark() {
 
 export function Nav() {
   const [open, setOpen] = useState(false)
-  const { state } = useStore()
-  const myTreesCount = state.sponsorships.length
+  const { user, logout } = useSession()
+  const navigate = useNavigate()
+  const items = ITEMS.filter((i) => !i.roles || (user && i.roles.includes(user.role)))
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `rounded-full px-3 py-1.5 text-[14px] font-medium transition-colors ${
-      isActive ? 'bg-canopy-soft text-canopy-deep' : 'text-ink-soft hover:text-ink'
-    }`
+    `rounded-full px-3 py-1.5 text-[14px] font-medium transition-colors ${isActive ? 'bg-canopy-soft text-canopy-deep' : 'text-ink-soft hover:text-ink'}`
+
+  async function signOut() {
+    setOpen(false)
+    // leave any protected page first so its redirect doesn't remember it as "from"
+    navigate('/')
+    await logout()
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur-sm">
@@ -43,23 +60,31 @@ export function Nav() {
         <Wordmark />
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
-          {LINKS.map((link) => (
-            <NavLink key={link.to} to={link.to} className={linkClass}>
-              {link.label}
-              {link.to === '/my-trees' && myTreesCount > 0 && (
-                <span className="ml-1.5 inline-flex size-5 items-center justify-center rounded-full bg-canopy font-mono text-[11px] font-semibold text-white">
-                  {myTreesCount}
-                </span>
-              )}
+          {items.map((item) => (
+            <NavLink key={item.to} to={item.to} className={linkClass}>
+              {item.label}
             </NavLink>
           ))}
         </nav>
 
         <div className="flex items-center gap-3">
-          <span className="demo-chip" title="All data in this prototype is fictional">
-            <span className="size-1.5 rounded-full bg-tape-deep" aria-hidden="true" />
-            Demo mode
-          </span>
+          {ENV !== 'production' && (
+            <span className="demo-chip" title="This is not the production environment">
+              {ENV}
+            </span>
+          )}
+          {user ? (
+            <div className="hidden items-center gap-3 lg:flex">
+              <span className="text-[13px] text-ink-soft">{user.name}</span>
+              <button type="button" onClick={signOut} className="btn-secondary btn-small">
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <Link to="/login" className="btn-primary btn-small hidden lg:inline-flex">
+              Sign in
+            </Link>
+          )}
           <button
             type="button"
             className="cursor-pointer rounded-lg p-2 text-ink lg:hidden"
@@ -74,26 +99,27 @@ export function Nav() {
 
       {open && (
         <nav className="border-t border-line bg-paper px-4 pt-2 pb-4 lg:hidden" aria-label="Main mobile">
-          {LINKS.map((link) => (
+          {items.map((item) => (
             <NavLink
-              key={link.to}
-              to={link.to}
+              key={item.to}
+              to={item.to}
               onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                `block rounded-xl px-3 py-2.5 text-[15px] font-medium ${
-                  isActive ? 'bg-canopy-soft text-canopy-deep' : 'text-ink-soft'
-                }`
-              }
+              className={({ isActive }) => `block rounded-xl px-3 py-2.5 text-[15px] font-medium ${isActive ? 'bg-canopy-soft text-canopy-deep' : 'text-ink-soft'}`}
             >
-              {link.label}
-              {link.to === '/my-trees' && myTreesCount > 0 && (
-                <span className="ml-2 font-mono text-[12px] text-canopy-deep">({myTreesCount})</span>
-              )}
+              {item.label}
             </NavLink>
           ))}
-          <p className="mt-3 px-3 font-mono text-[11px] text-ink-muted">
-            Demo mode: all data is fictional.
-          </p>
+          <div className="mt-3 border-t border-line px-3 pt-3">
+            {user ? (
+              <button type="button" onClick={signOut} className="btn-secondary btn-small">
+                Sign out ({user.name})
+              </button>
+            ) : (
+              <Link to="/login" onClick={() => setOpen(false)} className="btn-primary btn-small">
+                Sign in
+              </Link>
+            )}
+          </div>
         </nav>
       )}
     </header>

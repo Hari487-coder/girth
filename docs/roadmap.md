@@ -18,9 +18,12 @@ next column until the previous column's experiment has a result.
 | Roles: admin, auditor, farmer, customer, organisation | API done |
 | Organisation programs, clusters, overview, CSV report | API done, tested |
 | Local environment, migrations, seed, CI | Done |
-| **Web: wire the existing app to the API** (login, farmer mobile flow with QR scan, review queue, public `/tree/:id`) | Next |
+| Web wired to the API: sign-in, public `/tree/:id`, marketplace, sponsor flow, My Trees, farmer home + measurement wizard (QR scan where supported, photo, GPS, offline queue), review queue, audits, admin, program overview | Done, verified in the browser |
+| PWA manifest + service worker (installable farmer app) | Done |
+| Farmer strings routed through a dictionary (English; Telugu draft for native review) | Done |
 | **Staging deployment** (needs cloud accounts: Postgres, bucket, host) | Next |
 | S3-compatible storage driver | Next |
+| Public tree page link previews (server-rendered OG tags) | Next |
 
 ## NEXT (Phase 2 institutional pilot: 1 organisation, ~1,000 trees)
 

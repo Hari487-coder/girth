@@ -257,8 +257,8 @@ export function Landing() {
           </div>
         </motion.div>
         <p className="mt-4 text-[13px] text-ink-muted">
-          None of these prices are validated. Testing willingness to pay is what this
-          prototype is for.
+          None of these prices are validated yet. Testing willingness to pay is what the
+          pilot is for.
         </p>
       </section>
 
@@ -288,8 +288,8 @@ export function Landing() {
       <p className="mx-auto mt-10 max-w-7xl px-4 sm:px-6">
         <span className="flex items-center gap-2 text-[13px] text-ink-muted">
           <MapPinIcon size={14} aria-hidden="true" />
-          Pilot region in this demo: IIT Hyderabad (Kandi) and villages across
-          Sangareddy and Medak districts, Telangana. All demo data is fictional.
+          Pilot region: Kandi, around IIT Hyderabad, and villages across Sangareddy
+          district, Telangana.
         </span>
       </p>
     </div>

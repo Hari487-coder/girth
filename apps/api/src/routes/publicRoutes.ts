@@ -1,14 +1,72 @@
 import type { FastifyInstance } from 'fastify'
+import { growthSummary, LIVING_STATUSES } from '@girth/domain'
 import { notFound, forbidden } from '../lib/errors.js'
 import { requireAuth } from '../plugins/auth.js'
 import { publicTreeProfile } from '../services/publicTree.js'
+import { getNumberSetting, SETTING } from '../services/settings.js'
 
 export async function publicRoutes(app: FastifyInstance) {
+  /** Trees open for sponsorship: alive, verified at least once, not already sponsored. */
+  app.get('/public/trees', { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } }, async (request, reply) => {
+    const query = request.query as { species?: string; limit?: string }
+    const limit = Math.min(200, Math.max(1, Number(query.limit) || 60))
+    const [trees, pricePaise, termYears] = await Promise.all([
+      app.db.tree.findMany({
+        where: {
+          status: { in: [...LIVING_STATUSES] },
+          sponsorships: { none: { status: { in: ['ACTIVE', 'PENDING_PAYMENT'] } } },
+          ...(query.species ? { species: { equals: query.species, mode: 'insensitive' } } : {}),
+        },
+        orderBy: { seq: 'asc' },
+        take: limit,
+        include: {
+          cluster: { select: { locationLabel: true } },
+          farmer: { select: { district: true, state: true } },
+          measurements: {
+            where: { verificationStatus: 'VERIFIED' },
+            orderBy: { measurementDate: 'asc' },
+            select: { measurementDate: true, girthCm: true },
+          },
+        },
+      }),
+      getNumberSetting(app.db, SETTING.SPONSORSHIP_PRICE_PAISE),
+      getNumberSetting(app.db, SETTING.SPONSORSHIP_TERM_YEARS),
+    ])
+    return reply.header('cache-control', 'public, max-age=60').send({
+      pricePaise,
+      termYears,
+      trees: trees.map((t) => {
+        const summary = growthSummary(t.measurements.map((m) => ({ measurementDate: m.measurementDate, girthCm: m.girthCm.toNumber() })))
+        return {
+          publicId: t.publicId,
+          species: t.species,
+          status: t.status,
+          location: t.cluster?.locationLabel ?? (t.farmer ? `${t.farmer.district}, ${t.farmer.state}` : null),
+          plantingYear: t.plantingDate?.getUTCFullYear() ?? null,
+          currentGirthCm: summary.currentGirthCm,
+          lastGrowthCm: summary.lastGrowthCm,
+          totalGrowthCm: summary.totalGrowthCm,
+          verifiedReadings: summary.readings,
+          lastVerifiedAt: summary.lastVerifiedAt,
+        }
+      }),
+    })
+  })
+
   /** What a QR scan opens. No login, no farmer identity, no coordinates. */
   app.get('/public/trees/:publicId', { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } }, async (request, reply) => {
     const { publicId } = request.params as { publicId: string }
-    const profile = await publicTreeProfile(app.db, publicId)
-    return reply.header('cache-control', 'public, max-age=60').send(profile)
+    const [profile, pricePaise, termYears] = await Promise.all([
+      publicTreeProfile(app.db, publicId),
+      getNumberSetting(app.db, SETTING.SPONSORSHIP_PRICE_PAISE),
+      getNumberSetting(app.db, SETTING.SPONSORSHIP_TERM_YEARS),
+    ])
+    return reply.header('cache-control', 'public, max-age=60').send({
+      ...profile,
+      sponsorable: profile.alive && !profile.sponsorship,
+      pricePaise,
+      termYears,
+    })
   })
 
   app.get('/public/photos/:id', async (request, reply) => {

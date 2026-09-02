@@ -34,7 +34,17 @@ npm run dev          # web on http://localhost:3200
 
 Copy `apps/api/.env.example` to `apps/api/.env` first (a local `.env` is
 already present for development). Docker users can run `docker compose up -d`
-instead of `db:up`.
+instead of `db:up`. The web dev server proxies `/api` to the API, so no CORS
+setup is needed locally. Sign in with any account printed by the seed; the
+sign-in page lists them outside production.
+
+| Role | Sign in as | Lands on |
+| --- | --- | --- |
+| Admin | admin@girth.local | `/admin` |
+| Field auditor | auditor@girth.local | `/review` |
+| Farmer (Ravi) | +919000000001 | `/farm` |
+| Customer | customer@girth.local | `/my-trees` |
+| Organisation | org@girth.local | `/org` |
 
 ## Verify it
 

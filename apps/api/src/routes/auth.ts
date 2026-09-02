@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { LoginSchema } from '@girth/domain'
 import { parse } from '../lib/validate.js'
 import { unauthorized } from '../lib/errors.js'
-import { createSession, destroySession, requireAuth, verifyPassword } from '../plugins/auth.js'
+import { createSession, destroySession, verifyPassword } from '../plugins/auth.js'
 
 export async function authRoutes(app: FastifyInstance) {
   app.post(
@@ -35,8 +35,8 @@ export async function authRoutes(app: FastifyInstance) {
     return { ok: true }
   })
 
+  /** 200 with a null user when signed out: clients probe this on every load. */
   app.get('/auth/me', async (request) => {
-    const user = requireAuth(request)
-    return { user }
+    return { user: request.user }
   })
 }

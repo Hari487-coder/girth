@@ -41,7 +41,7 @@ plus managed Postgres; Railway or Fly.io are equivalent. Steps:
 1. Create the Postgres instance; set `DATABASE_URL`.
 2. Create the object storage bucket (Cloudflare R2 or S3); the S3 storage driver is the next API increment.
 3. Set secrets; deploy the API with `npm run build && npm run db:migrate && npm start`.
-4. Deploy the web app as static files with `VITE_API_URL` pointing at the API (web wiring is the next web increment).
+4. Deploy the web app as static files (`npm run build -w apps/web`, serve `apps/web/dist` with an SPA fallback) with `VITE_API_URL` set to the API origin and `VITE_APP_ENV=staging`. Add that web origin to the API's `WEB_ORIGINS`. Because the session cookie is `SameSite=Lax`, host the web app and API on the same site (e.g. `app.girth.example` and `api.girth.example`) or reverse-proxy the API under `/api` on the web origin, as the dev server does.
 5. Smoke test: `GET /health`, login as the seeded admin, `GET /public/trees/GIRTH-000001`.
 
 Migrations run before the new version starts serving. A migration that would

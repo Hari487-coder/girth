@@ -1,9 +1,8 @@
 import { useId, useState } from 'react'
 
 export interface GrowthPoint {
-  year: number
+  label: string
   girthCm: number
-  simulated?: boolean
 }
 
 interface GrowthChartProps {
@@ -16,9 +15,8 @@ const H = 250
 const PAD = { l: 46, r: 30, t: 28, b: 38 }
 
 /**
- * Single-series girth timeline. Hand-rolled SVG so the marks follow the
- * dataviz spec exactly: 2.5px line, 10px markers, recessive grid, a direct
- * label on the latest reading only, crosshair + tooltip on hover.
+ * Single-series girth timeline: 2.5px line, 10px markers, recessive grid, a
+ * direct label on the latest reading only, crosshair + tooltip on hover.
  */
 export function GrowthChart({ data, className }: GrowthChartProps) {
   const [hover, setHover] = useState<number | null>(null)
@@ -40,10 +38,9 @@ export function GrowthChart({ data, className }: GrowthChartProps) {
   const gridSteps: number[] = []
   for (let v = 0; v <= top; v += 5) gridSteps.push(v)
 
-  const last = data[data.length - 1]
+  const last = data[data.length - 1]!
   const hovered = hover !== null ? data[hover] : null
-  const hoveredDelta =
-    hover !== null && hover > 0 ? data[hover].girthCm - data[hover - 1].girthCm : null
+  const hoveredDelta = hover !== null && hover > 0 ? data[hover]!.girthCm - data[hover - 1]!.girthCm : null
 
   function handleMove(event: React.MouseEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -74,34 +71,13 @@ export function GrowthChart({ data, className }: GrowthChartProps) {
       >
         {gridSteps.map((v) => (
           <g key={v}>
-            <line
-              x1={PAD.l}
-              x2={W - PAD.r}
-              y1={y(v)}
-              y2={y(v)}
-              stroke="var(--color-line)"
-              strokeWidth={1}
-            />
-            <text
-              x={PAD.l - 10}
-              y={y(v) + 4}
-              textAnchor="end"
-              fontFamily="var(--font-mono)"
-              fontSize={11}
-              fill="var(--color-ink-muted)"
-            >
+            <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke="var(--color-line)" strokeWidth={1} />
+            <text x={PAD.l - 10} y={y(v) + 4} textAnchor="end" fontFamily="var(--font-mono)" fontSize={11} fill="var(--color-ink-muted)">
               {v}
             </text>
           </g>
         ))}
-        <text
-          x={PAD.l - 10}
-          y={PAD.t - 12}
-          textAnchor="end"
-          fontFamily="var(--font-mono)"
-          fontSize={11}
-          fill="var(--color-ink-muted)"
-        >
+        <text x={PAD.l - 10} y={PAD.t - 12} textAnchor="end" fontFamily="var(--font-mono)" fontSize={11} fill="var(--color-ink-muted)">
           cm
         </text>
 
@@ -109,20 +85,13 @@ export function GrowthChart({ data, className }: GrowthChartProps) {
         <path d={linePath} fill="none" stroke="var(--color-canopy)" strokeWidth={2.5} />
 
         {hover !== null && (
-          <line
-            x1={x(hover)}
-            x2={x(hover)}
-            y1={PAD.t}
-            y2={H - PAD.b}
-            stroke="var(--color-line-strong)"
-            strokeWidth={1}
-          />
+          <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={H - PAD.b} stroke="var(--color-line-strong)" strokeWidth={1} />
         )}
 
         {data.map((d, i) => {
           const isLast = i === data.length - 1
           return (
-            <g key={d.year}>
+            <g key={`${d.label}-${i}`}>
               <circle
                 cx={x(i)}
                 cy={y(d.girthCm)}
@@ -130,7 +99,6 @@ export function GrowthChart({ data, className }: GrowthChartProps) {
                 fill={isLast ? 'var(--color-canopy)' : 'var(--color-surface)'}
                 stroke="var(--color-canopy)"
                 strokeWidth={2.5}
-                strokeDasharray={d.simulated ? '3 2' : undefined}
               />
               <text
                 x={x(i)}
@@ -140,13 +108,12 @@ export function GrowthChart({ data, className }: GrowthChartProps) {
                 fontSize={12}
                 fill={hover === i ? 'var(--color-ink)' : 'var(--color-ink-muted)'}
               >
-                {d.year}
+                {d.label}
               </text>
             </g>
           )
         })}
 
-        {/* direct label on the latest reading only */}
         <text
           x={Math.min(x(data.length - 1), W - PAD.r - 4)}
           y={y(last.girthCm) - 14}
@@ -160,35 +127,29 @@ export function GrowthChart({ data, className }: GrowthChartProps) {
         </text>
       </svg>
 
-      {hovered && (
+      {hovered && hover !== null && (
         <div
           className="pointer-events-none absolute top-1 z-10 -translate-x-1/2 rounded-lg border border-line bg-surface px-3 py-1.5 font-mono text-[12px] whitespace-nowrap shadow-sm"
-          style={{
-            left: `${(x(hover!) / W) * 100}%`,
-          }}
+          style={{ left: `${(x(hover) / W) * 100}%` }}
         >
           <span className="font-semibold">{hovered.girthCm} cm</span>
-          <span className="text-ink-muted"> in {hovered.year}</span>
-          {hoveredDelta !== null && (
-            <span className="text-canopy-deep font-semibold"> (+{hoveredDelta})</span>
-          )}
-          {hovered.simulated && <span className="text-ink-muted"> · simulated</span>}
+          <span className="text-ink-muted"> {hovered.label}</span>
+          {hoveredDelta !== null && <span className="font-semibold text-canopy-deep"> ({hoveredDelta >= 0 ? '+' : ''}{Math.round(hoveredDelta * 10) / 10})</span>}
         </div>
       )}
 
-      {/* accessible data table for screen readers */}
       <table id={tableId} className="sr-only">
-        <caption>Verified girth by year</caption>
+        <caption>Verified girth by date</caption>
         <thead>
           <tr>
-            <th scope="col">Year</th>
+            <th scope="col">Date</th>
             <th scope="col">Girth in cm</th>
           </tr>
         </thead>
         <tbody>
-          {data.map((d) => (
-            <tr key={d.year}>
-              <td>{d.year}</td>
+          {data.map((d, i) => (
+            <tr key={`${d.label}-${i}`}>
+              <td>{d.label}</td>
               <td>{d.girthCm}</td>
             </tr>
           ))}

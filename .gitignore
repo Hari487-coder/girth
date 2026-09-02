@@ -12,7 +12,8 @@ dist-ssr
 !.env.example
 
 # local data
-apps/api/.pgdata
+apps/api/.pgdata*
+apps/api/.storage-test
 apps/api/storage
 *.local
 

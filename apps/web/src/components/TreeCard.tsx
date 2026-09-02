@@ -1,28 +1,24 @@
 import { Link } from 'react-router-dom'
 import { MapPinIcon } from '@phosphor-icons/react'
-import type { Tree } from '../lib/types'
-import { useStore } from '../lib/store'
-import { currentGirthCm, lastGrowthCm, treeAge } from '../lib/selectors'
-import { formatInr, signedCm } from '../lib/format'
+import type { AvailableTree } from '../lib/types'
+import { formatPaise, signedCm } from '../lib/format'
 import { SPECIES_PHOTOS } from '../lib/speciesPhotos'
 import { StatusBadge } from './StatusBadge'
 import { TapeRuler } from './TapeRuler'
 
 interface TreeCardProps {
-  tree: Tree
+  tree: AvailableTree
+  pricePaise: number
 }
 
-export function TreeCard({ tree }: TreeCardProps) {
-  const { state } = useStore()
-  const girth = currentGirthCm(state, tree.id)
-  const growth = lastGrowthCm(state, tree.id)
-  const age = treeAge(tree)
-  const sponsored = state.sponsorships.some((s) => s.treeId === tree.id)
+export function TreeCard({ tree, pricePaise }: TreeCardProps) {
   const photo = SPECIES_PHOTOS[tree.species]
+  const girth = tree.currentGirthCm ?? 0
+  const age = tree.plantingYear ? new Date().getUTCFullYear() - tree.plantingYear : null
 
   return (
     <Link
-      to={`/trees/${tree.id}`}
+      to={`/tree/${tree.publicId}`}
       className="card group flex flex-col overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-canopy hover:shadow-[0_10px_30px_-16px_rgba(45,106,67,0.35)]"
     >
       {photo && (
@@ -37,24 +33,30 @@ export function TreeCard({ tree }: TreeCardProps) {
         </div>
       )}
       <div className="flex items-center justify-between gap-3">
-        <span className="font-mono text-[12px] font-semibold tracking-wide text-ink-muted">
-          {tree.id}
-        </span>
-        <StatusBadge status={tree.status} label={tree.status === 'growing' ? 'Growing' : undefined} />
+        <span className="font-mono text-[12px] font-semibold tracking-wide text-ink-muted">{tree.publicId}</span>
+        <StatusBadge status={tree.status} label={tree.status === 'ACTIVE' ? 'Growing' : undefined} />
       </div>
 
       <h3 className="mt-2 font-display text-2xl font-bold text-ink">{tree.species}</h3>
-      <p className="mt-1 flex items-center gap-1.5 text-[13px] text-ink-soft">
-        <MapPinIcon size={14} aria-hidden="true" />
-        {tree.location}
-      </p>
+      {tree.location && (
+        <p className="mt-1 flex items-center gap-1.5 text-[13px] text-ink-soft">
+          <MapPinIcon size={14} aria-hidden="true" />
+          {tree.location}
+        </p>
+      )}
 
       <div className="mt-4 flex items-baseline gap-2">
-        <span className="font-mono text-3xl font-bold tracking-tight text-ink">{girth}</span>
-        <span className="font-mono text-sm text-ink-muted">cm girth</span>
-        {growth !== undefined && growth > 0 && (
+        {tree.currentGirthCm !== null ? (
+          <>
+            <span className="font-mono text-3xl font-bold tracking-tight text-ink">{tree.currentGirthCm}</span>
+            <span className="font-mono text-sm text-ink-muted">cm girth</span>
+          </>
+        ) : (
+          <span className="text-sm text-ink-muted">Awaiting first verified measurement</span>
+        )}
+        {tree.lastGrowthCm !== null && tree.lastGrowthCm > 0 && (
           <span className="ml-auto rounded-md bg-canopy-soft px-1.5 py-0.5 font-mono text-[12px] font-semibold text-canopy-deep">
-            {signedCm(growth)} this year
+            {signedCm(tree.lastGrowthCm)} last year
           </span>
         )}
       </div>
@@ -63,28 +65,24 @@ export function TreeCard({ tree }: TreeCardProps) {
       <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 text-[13px]">
         <div>
           <dt className="text-ink-muted">Age</dt>
-          <dd className="font-semibold text-ink">
-            {age} {age === 1 ? 'year' : 'years'}
-          </dd>
+          <dd className="font-semibold text-ink">{age === null ? '–' : `${age} ${age === 1 ? 'year' : 'years'}`}</dd>
         </div>
         <div>
           <dt className="text-ink-muted">Planted</dt>
-          <dd className="font-semibold text-ink">{tree.plantedYear}</dd>
+          <dd className="font-semibold text-ink">{tree.plantingYear ?? '–'}</dd>
         </div>
         <div>
-          <dt className="text-ink-muted">Farmer</dt>
-          <dd className="truncate font-semibold text-ink">{tree.farmerName.split(' ')[0]}</dd>
+          <dt className="text-ink-muted">Verified</dt>
+          <dd className="font-semibold text-ink">{tree.verifiedReadings}×</dd>
         </div>
       </dl>
 
       <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
         <span className="text-[15px] font-bold text-ink">
-          {formatInr(tree.priceInr)}
-          <span className="font-normal text-ink-muted"> / year</span>
+          {formatPaise(pricePaise)}
+          <span className="font-normal text-ink-muted"> sponsorship</span>
         </span>
-        <span className="text-[13px] font-semibold text-canopy group-hover:underline">
-          {sponsored ? 'In your grove' : 'View tree'}
-        </span>
+        <span className="text-[13px] font-semibold text-canopy group-hover:underline">View tree</span>
       </div>
     </Link>
   )
