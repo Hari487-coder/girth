@@ -21,8 +21,11 @@ next column until the previous column's experiment has a result.
 | Web wired to the API: sign-in, public `/tree/:id`, marketplace, sponsor flow, My Trees, farmer home + measurement wizard (QR scan where supported, photo, GPS, offline queue), review queue, audits, admin, program overview | Done, verified in the browser |
 | PWA manifest + service worker (installable farmer app) | Done |
 | Farmer strings routed through a dictionary (English; Telugu draft for native review) | Done |
-| **Staging deployment** (needs cloud accounts: Postgres, bucket, host) | Next |
-| S3-compatible storage driver | Next |
+| S3-compatible storage driver (tested against MinIO) | Done |
+| Staging deployment on the VPS (Postgres, MinIO, API, web behind the edge proxy, HTTPS); smoke test, data QA, backup cron, restore drill all green | Done, 2 Sep 2026 |
+| Authorisation matrix, abuse-input and container-build tests in CI | Done |
+| **Real phone testing** (`docs/phone-testing.md`) and staging sign-off (`docs/staging-signoff.md`) | Next: needs hands on a budget Android |
+| Real subdomain for staging (one DNS A record) so no network filter blocks it | Next: needs DNS |
 | Public tree page link previews (server-rendered OG tags) | Next |
 
 ## NEXT (Phase 2 institutional pilot: 1 organisation, ~1,000 trees)

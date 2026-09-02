@@ -13,6 +13,13 @@ sign-off and record results in the table at the bottom.
 | iPhone | Safari | Sponsors and organisation staff. No BarcodeDetector: camera-app scan path |
 | Laptop | Chrome | Reviewer queue, admin |
 
+## Reaching staging
+
+Staging is `https://girth.177-7-41-98.sslip.io`. Some networks (including the
+office Wi-Fi used during the build) filter wildcard-DNS hostnames such as
+`sslip.io` and show a 403 block page. If the site does not load, switch the
+phone to mobile data, or use the real subdomain once DNS for it exists.
+
 ## Before you start
 
 - Print a QR tag: Admin → Trees → QR SVG for a seeded tree, or any tree you register. Print at ≥ 3 cm.

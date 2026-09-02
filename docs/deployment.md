@@ -56,7 +56,14 @@ docker compose -f deploy/docker-compose.staging.yml --env-file deploy/.env exec 
 ```
 
 Without DNS, `girth.<ip-with-dashes>.sslip.io` resolves to the server and
-Let's Encrypt issues a certificate for it. The API container runs
+Let's Encrypt issues a certificate for it. Corporate and some home networks
+block wildcard-DNS domains; a real subdomain (one A record to the server, one
+more site block on the proxy) avoids that and is the plan for the pilot.
+
+Staging as deployed on 2 Sep 2026: `https://girth.177-7-41-98.sslip.io`,
+compose project `girth-staging` in `/opt/girth`, env in `/opt/girth/deploy/.env`
+(mode 600, not in git), site block in `/opt/edge/Caddyfile`, nightly backup cron
+at 02:15 server time. The API container runs
 `prisma migrate deploy` before it serves; `SEED_ON_BOOT=true` seeds demo
 accounts on the first boot only (set it back to `false` and rotate the seeded
 passwords before real users). Backups: `deploy/backup.sh` nightly via cron,

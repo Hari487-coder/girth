@@ -14,6 +14,10 @@ $COMPOSE run --rm -v "/tmp/${FILE}:/tmp/${FILE}:ro" --entrypoint /bin/sh minio-i
 rm -f "/tmp/${FILE}"
 echo "backup ${FILE} stored in ${S3_BUCKET}/backups/"
 
-# keep the last 30 in the bucket
-$COMPOSE run --rm --entrypoint /bin/sh minio-init -c \
-  "mc alias set local http://minio:9000 ${S3_ACCESS_KEY_ID} ${S3_SECRET_ACCESS_KEY} >/dev/null && mc ls local/${S3_BUCKET}/backups/ | sort | head -n -30 | awk '{print \$NF}' | while read f; do [ -n \"\$f\" ] && mc rm local/${S3_BUCKET}/backups/\$f; done" || true
+# keep the last 30 in the bucket (listing parsed on the host; the mc image has no awk)
+MC="$COMPOSE run --rm --entrypoint /bin/sh minio-init -c"
+$MC "mc alias set local http://minio:9000 ${S3_ACCESS_KEY_ID} ${S3_SECRET_ACCESS_KEY} >/dev/null && mc ls local/${S3_BUCKET}/backups/" 2>/dev/null \
+  | awk '{print $NF}' | grep -E '^girth-.*\.sql\.gz$' | sort | head -n -30 \
+  | while read -r old; do
+      [ -n "$old" ] && $MC "mc alias set local http://minio:9000 ${S3_ACCESS_KEY_ID} ${S3_SECRET_ACCESS_KEY} >/dev/null && mc rm local/${S3_BUCKET}/backups/${old}" && echo "pruned ${old}"
+    done || true

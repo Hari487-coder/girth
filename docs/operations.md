@@ -59,4 +59,4 @@ database, runs the data-quality checks against it and drops it.
 
 | Date | Environment | Duration | Result | Notes |
 | --- | --- | --- | --- | --- |
-| (none yet) | | | | Run before the pilot starts |
+| 2026-09-02 | staging (VPS) | 2 s | PASS | First drill after deploy: dump → restore into scratch DB → data QA 11/11 → drop. Dataset: 3 trees, 7 verified readings |
