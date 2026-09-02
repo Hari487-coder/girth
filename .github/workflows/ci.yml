@@ -21,13 +21,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-      minio:
-        image: bitnami/minio:latest
-        env:
-          MINIO_ROOT_USER: girth
-          MINIO_ROOT_PASSWORD: girth-minio
-          MINIO_DEFAULT_BUCKETS: girth-test
-        ports: ['9000:9000']
     env:
       DATABASE_URL_TEST: postgresql://girth:girth@localhost:5432/girth_test
       S3_TEST_ENDPOINT: http://localhost:9000
@@ -41,6 +34,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-fund --no-audit
+      - name: Start MinIO for the storage driver test
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=girth -e MINIO_ROOT_PASSWORD=girth-minio \
+            minio/minio:latest server /data
+          for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/live && break; sleep 1; done
+          docker run --rm --network host --entrypoint /bin/sh minio/mc:latest -c \
+            "mc alias set ci http://localhost:9000 girth girth-minio && mc mb --ignore-existing ci/girth-test"
       - name: Build domain
         run: npm run build -w packages/domain
       - name: Typecheck

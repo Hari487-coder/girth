@@ -5,7 +5,7 @@ ARG VITE_API_URL=/api
 ARG VITE_APP_ENV=staging
 ENV VITE_API_URL=$VITE_API_URL VITE_APP_ENV=$VITE_APP_ENV
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/domain/package.json packages/domain/
 COPY apps/web/package.json apps/web/
 RUN npm ci -w packages/domain -w apps/web --no-audit --no-fund

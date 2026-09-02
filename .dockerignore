@@ -1,0 +1,13 @@
+# Never bake local state, secrets or build output into an image.
+.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+**/.pgdata*
+**/storage
+**/.storage-test*
+apps/web/qr
+*.mp4
+docs

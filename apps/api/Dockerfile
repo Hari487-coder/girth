@@ -2,7 +2,7 @@
 #   docker build -f apps/api/Dockerfile -t girth-api .
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/domain/package.json packages/domain/
 COPY apps/api/package.json apps/api/
 RUN npm ci -w packages/domain -w apps/api --no-audit --no-fund
