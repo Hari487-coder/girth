@@ -1,26 +1,32 @@
-# Logs
+# dependencies
+node_modules
+
+# builds
+dist
+dist-ssr
+*.tsbuildinfo
+
+# local env and secrets
+.env
+.env.*
+!.env.example
+
+# local data
+apps/api/.pgdata
+apps/api/storage
+*.local
+
+# logs
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# editors / os
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
 
+# demo artefacts
 girth-demo.mp4

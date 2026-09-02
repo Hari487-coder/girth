@@ -2,64 +2,65 @@
 
 **Don't pay for trees planted. Pay for trees that grow.**
 
-Girth is an MVP prototype for a startup that changes the unit of value in tree
-planting: instead of selling saplings, it sells *verified growth*. A customer
-sponsors a real tree with a unique ID, a farmer and a location. Every year the
-tree's survival and trunk girth are measured, verified and added to a permanent
-timeline. The farmer's income is tied to the tree staying alive and growing.
+Girth is a tree identity, measurement and verification platform. Every tree
+gets a permanent ID and a QR tag; its trunk girth is measured every year with
+photo, GPS and timestamp; a human verifies it; a share is physically audited;
+farmers are paid for trees that stay alive and grow; sponsors and organisations
+see the evidence. One tree is the unit of everything.
 
-**Live demo:** https://hari487-coder.github.io/girth/
+> A tree is planted once. Its story shouldn't end there.
 
-> All trees, farmers, measurements, photos, prices and experiment results in
-> this app are **fictional demo data**. This is a Lean Startup prototype built
-> to test hypotheses, not a live service.
+## Repository
 
-## The hypotheses this MVP tests
+```
+apps/web         React + Vite + Tailwind. Today: the MVP demo (GitHub Pages). Next: wired to the API.
+apps/api         Fastify + Prisma + PostgreSQL. Identity, measurement, verification, audits, ledger.
+packages/domain  Pure rules shared by both: status machine, checks, payment maths, audit sampling, schemas.
+docs/            Architecture, database, API, protocol, verification, payments, security, deployment, operations, experiments, roadmap.
+```
 
-1. People understand and value "pay for growth" more than "plant a tree".
-2. People will pay for a tree they can follow over time.
-3. Farmers maintain trees when income depends on survival and growth.
-4. A simple verification system creates enough trust for customers.
-
-## What's in the prototype
-
-- **Landing** with the core contrast: a planted tree is a claim, a growing tree is proof
-- **Marketplace** of sponsorable trees with occasion, species, location, price and status filters
-- **Tree profile**: current girth on a measuring tape, verified growth chart, and the full measurement record (photo, GPS, timestamp, verification pipeline)
-- **Sponsor flow**: occasion, plan, personalisation, confirmation (no real payment)
-- **My Trees** dashboard with a simulated annual growth update (the emotional payoff: 14 → 18 cm)
-- **Farmer Portal**: derived farm stats, the prototype incentive model (alive pay + growth bonus, dead tree earns nothing), and a measurement submission form
-- **Verification queue**: verify / flag / request remeasurement, with automated sanity checks; verified readings land on the customer timeline
-- **Experiment Dashboard**: mock Build → Measure → Learn funnels for each hypothesis
-
-The whole loop works end to end: the farmer submits a measurement, the Girth
-team verifies it, and the customer's tree page updates.
-
-## Stack
-
-React 19 · TypeScript · Vite · Tailwind CSS 4 · React Router · Motion.
-State lives in a reducer persisted to localStorage; there is no backend.
+Live MVP demo: https://hari487-coder.github.io/girth/ (fictional data, no backend).
 
 ## Run it locally
 
 ```bash
 npm install
-npm run dev
+npm run db:up        # embedded PostgreSQL on 127.0.0.1:5433 (leave running)
+npm run db:migrate
+npm run db:seed      # prints the seeded logins
+npm run dev:api      # API on http://localhost:4000
+npm run dev          # web on http://localhost:3200
 ```
+
+Copy `apps/api/.env.example` to `apps/api/.env` first (a local `.env` is
+already present for development). Docker users can run `docker compose up -d`
+instead of `db:up`.
+
+## Verify it
+
+```bash
+npm run typecheck
+npm test             # domain unit tests + API acceptance chain on a real Postgres
+```
+
+The acceptance suite (`apps/api/test/acceptance.test.ts`) runs the critical
+journey end to end: admin registers farmer, land, cluster and tree → QR →
+farmer submits a measurement with a photo → queue → auditor verifies → growth
+history and payment eligibility update → farmer sees payment → public tree
+page shows the verified history with no private data. It also proves the
+history cannot be edited even with database access.
+
+## Read next
+
+Start with [docs/architecture.md](docs/architecture.md), then
+[docs/roadmap.md](docs/roadmap.md) for what is built, what is next and what is
+deliberately not being built.
 
 ## Photo credits
 
-The landing page uses real photographs via Wikimedia Commons, shown with an
-explicit "not our trees yet" note in the UI:
+The web app uses real photographs via Wikimedia Commons, credited in the UI:
 
 - [India - Kids - Planting trees for her future](https://commons.wikimedia.org/wiki/File:India_-_Kids_-_Planting_trees_for_her_future_(4040009491).jpg) by McKay Savage, CC BY 2.0
 - [Plant a Sapling for Better Future](https://commons.wikimedia.org/wiki/File:Plant_a_Sapling_for_Better_Future.jpg) by Robbieross123, CC BY-SA 4.0
 - [Central Library IIT Hyderabad](https://commons.wikimedia.org/wiki/File:Central_Library_IIT_Hyderabad,_Knowledge_Resource_centre_IIT_Hyderabad.jpg) by Mukesh721, CC0
-
-Deploys to GitHub Pages from the `gh-pages` branch:
-
-```bash
-npx vite build --base=/girth/
-# copy dist/index.html to dist/404.html for SPA deep links, then
-npx gh-pages -d dist
-```
+- Species photos: see `apps/web/src/lib/speciesPhotos.ts`

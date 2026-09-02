@@ -1,0 +1,701 @@
+// Girth data model. One tree is the fundamental unit; everything hangs off it.
+// Historical records (measurements, audits, ledger, audit log) are append-only,
+// enforced by database triggers in the migrations, not only by convention.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- people
+
+enum UserRole {
+  ADMIN
+  FIELD_AUDITOR
+  FARMER
+  CUSTOMER
+  ORGANISATION
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+model User {
+  id             String     @id @default(uuid())
+  name           String
+  email          String?    @unique
+  phone          String?    @unique
+  passwordHash   String?
+  role           UserRole
+  status         UserStatus @default(ACTIVE)
+  organisationId String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id])
+  farmer       Farmer?
+  sessions     Session[]
+  sponsorships Sponsorship[]
+
+  submittedMeasurements Measurement[] @relation("MeasurementSubmitter")
+  verifiedMeasurements  Measurement[] @relation("MeasurementVerifier")
+  audits                Audit[]
+  uploadedPhotos        Photo[]
+  auditLogEntries       AuditLog[]
+  statusChanges         TreeStatusHistory[]
+  notifications         NotificationEvent[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ip        String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum IdentityStatus {
+  UNVERIFIED
+  VERIFIED
+}
+
+enum ContractStatus {
+  NONE
+  DRAFT
+  SIGNED
+  EXPIRED
+}
+
+model Farmer {
+  id                String         @id @default(uuid())
+  userId            String         @unique
+  legalName         String
+  phone             String
+  village           String
+  district          String
+  state             String
+  preferredLanguage String         @default("en")
+  identityStatus    IdentityStatus @default(UNVERIFIED)
+  contractStatus    ContractStatus @default(NONE)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  user       User              @relation(fields: [userId], references: [id])
+  landPlots  LandPlot[]
+  trees      Tree[]
+  ledger     PaymentLedger[]
+  agreements FarmerAgreement[]
+}
+
+enum OrganisationType {
+  NGO
+  CSR
+  FOUNDATION
+  COMPANY
+  GOVERNMENT
+  OTHER
+}
+
+enum OrganisationStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Organisation {
+  id                  String             @id @default(uuid())
+  name                String
+  organisationType    OrganisationType
+  registrationDetails String?
+  contactName         String?
+  contactEmail        String?
+  contactPhone        String?
+  status              OrganisationStatus @default(ACTIVE)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  users      User[]
+  programs   Program[]
+  clusters   TreeCluster[]
+  trees      Tree[]
+  agreements FarmerAgreement[]
+}
+
+enum ProgramStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Program {
+  id             String        @id @default(uuid())
+  organisationId String
+  name           String
+  description    String?
+  status         ProgramStatus @default(ACTIVE)
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organisation Organisation  @relation(fields: [organisationId], references: [id])
+  clusters     TreeCluster[]
+}
+
+// ---------------------------------------------------------------- land
+
+enum OwnershipStatus {
+  OWNED
+  LEASED
+  COMMUNITY
+  UNKNOWN
+}
+
+enum AgreementStatus {
+  NONE
+  DRAFT
+  SIGNED
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+model LandPlot {
+  id              String          @id @default(uuid())
+  farmerId        String
+  name            String
+  locationLabel   String
+  latitude        Float?
+  longitude       Float?
+  ownershipStatus OwnershipStatus @default(UNKNOWN)
+  agreementStatus AgreementStatus @default(NONE)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  farmer     Farmer            @relation(fields: [farmerId], references: [id])
+  clusters   TreeCluster[]
+  trees      Tree[]
+  agreements FarmerAgreement[]
+}
+
+enum ClusterStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model TreeCluster {
+  id             String        @id @default(uuid())
+  organisationId String?
+  programId      String?
+  landPlotId     String?
+  name           String
+  locationLabel  String
+  latitude       Float?
+  longitude      Float?
+  status         ClusterStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id])
+  program      Program?      @relation(fields: [programId], references: [id])
+  landPlot     LandPlot?     @relation(fields: [landPlotId], references: [id])
+  trees        Tree[]
+}
+
+model FarmerAgreement {
+  id                    String          @id @default(uuid())
+  farmerId              String
+  landPlotId            String?
+  organisationId        String?
+  treeRights            String
+  harvestRights         String
+  replacementConditions String
+  landSaleConditions    String
+  startsAt              DateTime
+  endsAt                DateTime?
+  status                AgreementStatus @default(DRAFT)
+  signedAt              DateTime?
+  documentKey           String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  farmer       Farmer        @relation(fields: [farmerId], references: [id])
+  landPlot     LandPlot?     @relation(fields: [landPlotId], references: [id])
+  organisation Organisation? @relation(fields: [organisationId], references: [id])
+}
+
+// ---------------------------------------------------------------- trees
+
+enum TreeStatus {
+  PLANNED
+  PLANTED
+  ACTIVE
+  NEEDS_ATTENTION
+  FLAGGED
+  DEAD
+  REPLACED
+  RETIRED
+}
+
+enum TreeOwnership {
+  FARMER
+  ORGANISATION
+  SHARED
+}
+
+model Tree {
+  id               String        @id @default(uuid())
+  /// Human-readable, never recycled: GIRTH-000001
+  publicId         String        @unique
+  /// Backed by a database sequence; the source of the public id
+  seq              Int           @unique @default(autoincrement())
+  clusterId        String?
+  farmerId         String?
+  organisationId   String?
+  landPlotId       String?
+  species          String
+  variety          String?
+  plantingDate     DateTime?
+  latitude         Float?
+  longitude        Float?
+  status           TreeStatus    @default(PLANTED)
+  ownershipStatus  TreeOwnership @default(FARMER)
+  currentGirthCm   Decimal?      @db.Decimal(6, 2)
+  currentGirthDate DateTime?
+  replacementForId String?       @unique
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  cluster        TreeCluster?  @relation(fields: [clusterId], references: [id])
+  farmer         Farmer?       @relation(fields: [farmerId], references: [id])
+  organisation   Organisation? @relation(fields: [organisationId], references: [id])
+  landPlot       LandPlot?     @relation(fields: [landPlotId], references: [id])
+  replacementFor Tree?         @relation("TreeReplacement", fields: [replacementForId], references: [id])
+  replacedBy     Tree?         @relation("TreeReplacement")
+
+  tags          TreeTag[]
+  statusHistory TreeStatusHistory[]
+  measurements  Measurement[]
+  photos        Photo[]
+  audits        Audit[]
+  ledger        PaymentLedger[]
+  sponsorships  Sponsorship[]
+
+  @@index([farmerId])
+  @@index([clusterId])
+  @@index([organisationId])
+  @@index([status])
+}
+
+enum TagStatus {
+  ACTIVE
+  REPLACED
+  LOST
+  DAMAGED
+}
+
+model TreeTag {
+  id             String    @id @default(uuid())
+  treeId         String
+  tagCode        String    @unique
+  status         TagStatus @default(ACTIVE)
+  attachedAt     DateTime  @default(now())
+  replacedAt     DateTime?
+  replacedByTagId String?  @unique
+  notes          String?
+
+  tree          Tree     @relation(fields: [treeId], references: [id])
+  replacedByTag TreeTag? @relation("TagReplacement", fields: [replacedByTagId], references: [id])
+  replacesTag   TreeTag? @relation("TagReplacement")
+
+  @@index([treeId])
+}
+
+model TreeStatusHistory {
+  id          String      @id @default(uuid())
+  treeId      String
+  fromStatus  TreeStatus?
+  toStatus    TreeStatus
+  reason      String?
+  changedById String?
+  createdAt   DateTime    @default(now())
+
+  tree      Tree  @relation(fields: [treeId], references: [id])
+  changedBy User? @relation(fields: [changedById], references: [id])
+
+  @@index([treeId])
+}
+
+// ---------------------------------------------------------------- evidence
+
+enum MeasurementStatus {
+  SUBMITTED
+  PENDING_REVIEW
+  VERIFIED
+  FLAGGED
+  REMEASURE_REQUIRED
+  SUPERSEDED
+}
+
+enum AuditSelection {
+  NONE
+  SELECTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Measurement {
+  id                  String            @id @default(uuid())
+  treeId              String
+  submittedById       String
+  submittedAt         DateTime          @default(now())
+  measurementDate     DateTime
+  measurementHeightCm Int
+  girthCm             Decimal           @db.Decimal(6, 2)
+  latitude            Float?
+  longitude           Float?
+  distanceFromTreeM   Int?
+  deviceMetadata      String?
+  clientSubmissionId  String?
+  notes               String?
+  verificationStatus  MeasurementStatus @default(SUBMITTED)
+  anomaly             Boolean           @default(false)
+  verifiedById        String?
+  verifiedAt          DateTime?
+  verificationNotes   String?
+  auditStatus         AuditSelection    @default(NONE)
+  /// Set when this measurement corrects an earlier one; the earlier one is never edited
+  correctsId          String?           @unique
+  createdAt           DateTime          @default(now())
+
+  tree        Tree               @relation(fields: [treeId], references: [id])
+  submittedBy User               @relation("MeasurementSubmitter", fields: [submittedById], references: [id])
+  verifiedBy  User?              @relation("MeasurementVerifier", fields: [verifiedById], references: [id])
+  corrects    Measurement?       @relation("MeasurementCorrection", fields: [correctsId], references: [id])
+  correctedBy Measurement?       @relation("MeasurementCorrection")
+  checks      MeasurementCheck[]
+  photos      Photo[]
+  audits      Audit[]
+  ledger      PaymentLedger[]
+
+  @@unique([treeId, clientSubmissionId])
+  @@index([treeId, measurementDate])
+  @@index([verificationStatus])
+  @@index([submittedById])
+}
+
+enum CheckSeverity {
+  INFO
+  WARN
+  FAIL
+}
+
+model MeasurementCheck {
+  id            String        @id @default(uuid())
+  measurementId String
+  key           String
+  passed        Boolean
+  severity      CheckSeverity
+  detail        String
+  createdAt     DateTime      @default(now())
+
+  measurement Measurement @relation(fields: [measurementId], references: [id])
+
+  @@index([measurementId])
+}
+
+enum PhotoStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model Photo {
+  id                 String      @id @default(uuid())
+  treeId             String
+  measurementId      String?
+  auditId            String?
+  uploadedById       String
+  storageKey         String      @unique
+  thumbnailKey       String?
+  mimeType           String
+  sizeBytes          Int
+  sha256             String
+  width              Int?
+  height             Int?
+  latitude           Float?
+  longitude          Float?
+  takenAt            DateTime?
+  uploadedAt         DateTime    @default(now())
+  verificationStatus PhotoStatus @default(PENDING)
+  isPublic           Boolean     @default(false)
+  supersededById     String?     @unique
+
+  tree         Tree         @relation(fields: [treeId], references: [id])
+  measurement  Measurement? @relation(fields: [measurementId], references: [id])
+  audit        Audit?       @relation(fields: [auditId], references: [id])
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+  supersededBy Photo?       @relation("PhotoSupersession", fields: [supersededById], references: [id])
+  supersedes   Photo?       @relation("PhotoSupersession")
+
+  @@index([treeId])
+  @@index([measurementId])
+}
+
+enum AuditResult {
+  PENDING
+  PASS
+  MINOR_DISCREPANCY
+  MAJOR_DISCREPANCY
+  FRAUD_SUSPECTED
+}
+
+model Audit {
+  id               String      @id @default(uuid())
+  measurementId    String
+  treeId           String
+  auditorId        String?
+  scheduledAt      DateTime    @default(now())
+  performedAt      DateTime?
+  reportedGirthCm  Decimal     @db.Decimal(6, 2)
+  observedGirthCm  Decimal?    @db.Decimal(6, 2)
+  observedStatus   TreeStatus?
+  differenceCm     Decimal?    @db.Decimal(6, 2)
+  latitude         Float?
+  longitude        Float?
+  result           AuditResult @default(PENDING)
+  notes            String?
+  createdAt        DateTime    @default(now())
+
+  measurement Measurement @relation(fields: [measurementId], references: [id])
+  tree        Tree        @relation(fields: [treeId], references: [id])
+  auditor     User?       @relation(fields: [auditorId], references: [id])
+  photos      Photo[]
+
+  @@index([treeId])
+  @@index([result])
+}
+
+// ---------------------------------------------------------------- money
+
+model PaymentConfig {
+  id                  String   @id @default(uuid())
+  name                String
+  currency            String   @default("INR")
+  basePaise           Int      @default(0)
+  survivalPaise       Int
+  growthBonusPaise    Int
+  minGrowthCmForBonus Decimal  @default(1) @db.Decimal(5, 2)
+  deadPaise           Int      @default(0)
+  penaltyPaise        Int      @default(0)
+  replacementRule     String
+  /// Every config is illustrative until the pilot validates the numbers
+  label               String   @default("Illustrative payment model")
+  isActive            Boolean  @default(false)
+  createdById         String?
+  createdAt           DateTime @default(now())
+
+  ledger PaymentLedger[]
+}
+
+enum LedgerReason {
+  BASE
+  SURVIVAL
+  GROWTH_BONUS
+  DEAD
+  PENALTY
+  ADJUSTMENT
+}
+
+enum LedgerStatus {
+  ELIGIBLE
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+/// Append-only. Amounts never change; reversals are new negative entries.
+model PaymentLedger {
+  id                String       @id @default(uuid())
+  farmerId          String
+  treeId            String?
+  measurementId     String?
+  paymentConfigId   String?
+  amountPaise       Int
+  currency          String       @default("INR")
+  reason            LedgerReason
+  description       String
+  status            LedgerStatus @default(ELIGIBLE)
+  createdById       String?
+  createdAt         DateTime     @default(now())
+  approvedAt        DateTime?
+  paidAt            DateTime?
+  externalPaymentId String?
+
+  farmer        Farmer         @relation(fields: [farmerId], references: [id])
+  tree          Tree?          @relation(fields: [treeId], references: [id])
+  measurement   Measurement?   @relation(fields: [measurementId], references: [id])
+  paymentConfig PaymentConfig? @relation(fields: [paymentConfigId], references: [id])
+
+  @@index([farmerId, status])
+  @@index([treeId])
+}
+
+// ---------------------------------------------------------------- customers
+
+enum Occasion {
+  BIRTH
+  WEDDING
+  BIRTHDAY
+  MEMORIAL
+  HOUSEWARMING
+  COMMITMENT
+}
+
+enum SponsorshipPlan {
+  ONE_TIME
+  PREPAID_MULTI_YEAR
+  ORGANISATION
+  GIFT
+}
+
+enum SponsorshipStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model Sponsorship {
+  id                String            @id @default(uuid())
+  treeId            String
+  customerId        String
+  treeName          String
+  message           String?
+  occasion          Occasion
+  planType          SponsorshipPlan   @default(PREPAID_MULTI_YEAR)
+  amountPaise       Int
+  currency          String            @default("INR")
+  termYears         Int
+  startsAt          DateTime          @default(now())
+  endsAt            DateTime?
+  status            SponsorshipStatus @default(PENDING_PAYMENT)
+  girthAtStartCm    Decimal?          @db.Decimal(6, 2)
+  externalPaymentId String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  tree     Tree @relation(fields: [treeId], references: [id])
+  customer User @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@index([treeId])
+}
+
+// ---------------------------------------------------------------- platform
+
+/// Immutable. Who did what, to which entity, from what state to what state.
+model AuditLog {
+  id            String   @id @default(uuid())
+  actorId       String?
+  actorRole     String?
+  action        String
+  entityType    String
+  entityId      String
+  previousState Json?
+  newState      Json?
+  reason        String?
+  requestId     String?
+  ip            String?
+  createdAt     DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+/// Outbox: events are recorded here transactionally and delivered asynchronously.
+model NotificationEvent {
+  id              String              @id @default(uuid())
+  eventType       String
+  entityType      String
+  entityId        String
+  recipientUserId String?
+  channel         NotificationChannel @default(IN_APP)
+  payload         Json
+  status          NotificationStatus  @default(PENDING)
+  attempts        Int                 @default(0)
+  lastError       String?
+  createdAt       DateTime            @default(now())
+  sentAt          DateTime?
+
+  recipient User? @relation(fields: [recipientUserId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([recipientUserId])
+}
+
+enum ExperimentStatus {
+  PLANNED
+  RUNNING
+  LEARNING
+  DECIDED
+}
+
+enum ExperimentDecision {
+  PERSEVERE
+  PIVOT
+  STOP
+}
+
+model Experiment {
+  id             String              @id @default(uuid())
+  code           String              @unique
+  hypothesis     String
+  assumption     String?
+  targetAudience String?
+  experiment     String
+  metric         String
+  target         String?
+  result         String?
+  status         ExperimentStatus    @default(PLANNED)
+  learning       String?
+  decision       ExperimentDecision?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model Setting {
+  key         String   @id
+  value       String
+  description String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+}

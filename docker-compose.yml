@@ -1,0 +1,34 @@
+# Local infrastructure for machines with Docker. Machines without Docker use
+# `npm run db:up` (embedded PostgreSQL) instead.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: girth
+      POSTGRES_PASSWORD: girth
+      POSTGRES_DB: girth
+    ports:
+      - '5433:5432'
+    volumes:
+      - girth-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U girth']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: girth
+      MINIO_ROOT_PASSWORD: girth-minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - girth-minio:/data
+
+volumes:
+  girth-pg:
+  girth-minio:

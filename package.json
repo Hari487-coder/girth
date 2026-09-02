@@ -1,30 +1,28 @@
 {
   "name": "girth",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "0.2.0",
+  "description": "Girth: tree identity, measurement and verification platform. Pay for trees that grow.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@phosphor-icons/react": "^2.1.10",
-    "@tailwindcss/vite": "^4.3.3",
-    "motion": "^13.1.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.3",
-    "tailwindcss": "^4.3.3"
+    "dev": "npm run dev -w apps/web",
+    "dev:api": "npm run dev -w apps/api",
+    "db:up": "npm run db:up -w apps/api",
+    "db:migrate": "npm run db:migrate -w apps/api",
+    "db:seed": "npm run db:seed -w apps/api",
+    "build": "npm run build -w packages/domain && npm run build -w apps/api && npm run build -w apps/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w packages/domain && npm run test -w apps/api",
+    "lint": "npm run lint --workspaces --if-present",
+    "deploy:demo": "npm run build:demo -w apps/web && npx --yes gh-pages -d apps/web/dist -m \"Deploy demo\""
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
-    "oxlint": "^1.79.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.2.2"
+    "typescript": "~6.0.2"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

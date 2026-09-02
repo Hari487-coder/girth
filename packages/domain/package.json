@@ -1,0 +1,25 @@
+{
+  "name": "@girth/domain",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Pure domain rules shared by the API and web clients: tree status machine, measurement checks, payment maths, audit sampling, IDs.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vitest": "^4.0.0"
+  }
+}
