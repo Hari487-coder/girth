@@ -124,8 +124,15 @@ async function main() {
           status: 'ACTIVE',
         },
       })
+      // seeded data obeys the same rules as real data: every status change has an audit-log line
       await db.treeStatusHistory.create({ data: { treeId: tree.id, toStatus: 'PLANTED', reason: 'Seeded', changedById: admin.id } })
+      await db.auditLog.create({
+        data: { actorId: admin.id, actorRole: 'ADMIN', action: 'tree.created', entityType: 'Tree', entityId: tree.id, newState: { publicId: tree.publicId, species: t.species, status: 'PLANTED' }, reason: 'Seeded' },
+      })
       await db.treeStatusHistory.create({ data: { treeId: tree.id, fromStatus: 'PLANTED', toStatus: 'ACTIVE', reason: 'Seeded', changedById: admin.id } })
+      await db.auditLog.create({
+        data: { actorId: admin.id, actorRole: 'ADMIN', action: 'tree.status_changed', entityType: 'Tree', entityId: tree.id, previousState: { status: 'PLANTED' }, newState: { status: 'ACTIVE' }, reason: 'Seeded' },
+      })
       await db.treeTag.create({ data: { treeId: tree.id, tagCode: `TAG-${String(seq).padStart(5, '0')}` } })
       const plantedYear = new Date(t.planted).getUTCFullYear()
       let last: { girthCm: number; date: Date } | null = null
@@ -159,11 +166,16 @@ async function main() {
   }
 
   console.log('Seed complete.')
-  console.log(`  admin:    ${adminEmail} / ${adminPassword}`)
-  console.log('  auditor:  auditor@girth.local / girth-auditor-local')
-  console.log('  org:      org@girth.local / girth-org-local')
-  console.log('  farmer:   +919000000001 / girth-farmer-local')
-  console.log('  customer: customer@girth.local / girth-customer-local')
+  if (process.env.NODE_ENV === 'production') {
+    // never print credentials into production logs; the admin password lives in the deploy env
+    console.log(`  admin: ${adminEmail} (password from SEED_ADMIN_PASSWORD); demo roles seeded with placeholder passwords, rotate them before real users`)
+  } else {
+    console.log(`  admin:    ${adminEmail} / ${adminPassword}`)
+    console.log('  auditor:  auditor@girth.local / girth-auditor-local')
+    console.log('  org:      org@girth.local / girth-org-local')
+    console.log('  farmer:   +919000000001 / girth-farmer-local')
+    console.log('  customer: customer@girth.local / girth-customer-local')
+  }
 }
 
 main()
