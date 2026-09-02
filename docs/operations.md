@@ -49,7 +49,13 @@ software assumes.
 - [ ] Photos on public pages are thumbnails re-encoded without metadata
 - [ ] Access to admin accounts limited to named people; sessions revoked on departure
 
-## Restore drills
+## Backups and restore drills
+
+Nightly: `deploy/backup.sh` (pg_dump → gzip → the evidence bucket under
+`backups/`, last 30 kept). Cron on the server:
+`15 2 * * * /opt/girth/deploy/backup.sh >> /var/log/girth-backup.log 2>&1`.
+Drill: `deploy/restore-drill.sh` restores the latest dump into a scratch
+database, runs the data-quality checks against it and drops it.
 
 | Date | Environment | Duration | Result | Notes |
 | --- | --- | --- | --- | --- |

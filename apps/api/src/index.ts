@@ -5,6 +5,9 @@ import { buildApp } from './app.js'
 const env = loadEnv()
 const app = await buildApp({ env })
 
+// Refuse to serve if evidence storage is unreachable: a silent photo loss is worse than downtime.
+await app.storage.check()
+
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'shutting down')
   await app.close()

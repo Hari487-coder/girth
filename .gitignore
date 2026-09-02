@@ -10,6 +10,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
+!.env.staging.example
+deploy/.env
 
 # local data
 apps/api/.pgdata*

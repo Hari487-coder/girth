@@ -18,6 +18,11 @@ const EnvSchema = z.object({
   S3_ENDPOINT: z.string().optional(),
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
+  /** MinIO needs path-style URLs; R2 and S3 accept either. Defaults to true when an endpoint is set. */
+  S3_FORCE_PATH_STYLE: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
   /** Secret salt for audit sampling; rotate to change future selections. */
   AUDIT_SAMPLING_SALT: z.string().min(8).default('change-me-in-production'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),

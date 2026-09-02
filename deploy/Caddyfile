@@ -1,0 +1,5 @@
+# TLS termination for the staging stack. GIRTH_DOMAIN comes from .env.
+{$GIRTH_DOMAIN} {
+    encode gzip
+    reverse_proxy web:80
+}

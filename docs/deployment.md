@@ -31,7 +31,41 @@ On every pull request and push: install, build domain, typecheck all
 workspaces, unit tests, API acceptance tests against a Postgres service
 container, web build.
 
-## Staging (recommended first target)
+## Staging on a single VPS (current)
+
+`deploy/docker-compose.staging.yml` runs Postgres 17, MinIO (S3-compatible
+evidence storage, versioned bucket), the API and the web app as one compose
+project. TLS comes from the host's shared front proxy (a Caddy on the external
+docker network `edge`, one site block per project), so the stack binds no host
+ports itself.
+
+```bash
+# on the server, once
+sudo mkdir -p /opt/girth && cd /opt/girth
+git clone https://github.com/Hari487-coder/girth.git .
+cp deploy/.env.staging.example deploy/.env && $EDITOR deploy/.env   # secrets: openssl rand -hex 32
+docker network create edge 2>/dev/null || true
+
+# deploy / redeploy
+git pull
+docker compose -f deploy/docker-compose.staging.yml --env-file deploy/.env up -d --build
+# add to the front proxy's Caddyfile, then reload it:
+#   girth.<host> { reverse_proxy girth-staging-web-1:80 }
+node scripts/smoke.mjs https://girth.<host>
+docker compose -f deploy/docker-compose.staging.yml --env-file deploy/.env exec -T api node dist/scripts/data-qa.js
+```
+
+Without DNS, `girth.<ip-with-dashes>.sslip.io` resolves to the server and
+Let's Encrypt issues a certificate for it. The API container runs
+`prisma migrate deploy` before it serves; `SEED_ON_BOOT=true` seeds demo
+accounts on the first boot only (set it back to `false` and rotate the seeded
+passwords before real users). Backups: `deploy/backup.sh` nightly via cron,
+`deploy/restore-drill.sh` quarterly (record it in `operations.md`).
+
+Without a front proxy, `--profile standalone` adds the stack's own Caddy on
+80/443 using `deploy/Caddyfile`.
+
+## Staging on a managed platform (alternative)
 
 The API is a plain Node process that needs `DATABASE_URL`, `SESSION_SECRET`,
 `WEB_ORIGINS`, `PUBLIC_TREE_BASE_URL`, `AUDIT_SAMPLING_SALT` and storage
@@ -39,7 +73,7 @@ settings. `render.yaml` at the repository root describes a Render web service
 plus managed Postgres; Railway or Fly.io are equivalent. Steps:
 
 1. Create the Postgres instance; set `DATABASE_URL`.
-2. Create the object storage bucket (Cloudflare R2 or S3); the S3 storage driver is the next API increment.
+2. Create the object storage bucket (Cloudflare R2 or S3) and set `STORAGE_DRIVER=s3` with `S3_BUCKET`, `S3_ENDPOINT` (R2/MinIO), `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`. The API refuses to start if the bucket is unreachable.
 3. Set secrets; deploy the API with `npm run build && npm run db:migrate && npm start`.
 4. Deploy the web app as static files (`npm run build -w apps/web`, serve `apps/web/dist` with an SPA fallback) with `VITE_API_URL` set to the API origin and `VITE_APP_ENV=staging`. Add that web origin to the API's `WEB_ORIGINS`. Because the session cookie is `SameSite=Lax`, host the web app and API on the same site (e.g. `app.girth.example` and `api.girth.example`) or reverse-proxy the API under `/api` on the web origin, as the dev server does.
 5. Smoke test: `GET /health`, login as the seeded admin, `GET /public/trees/GIRTH-000001`.
